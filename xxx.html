@@ -136,7 +136,7 @@
         <div id="startScreen">
             <h1>Пончиковый обжора</h1>
             <p>Лови падающие пончики!</p>
-            <p>Управление: стрелки влево/вправо</p>
+            <p>Управление: стрелки влево/вправо (удерживайте для движения)</p>
             <button id="startButton">Начать игру</button>
         </div>
         
@@ -153,9 +153,11 @@
         let lives = 3;
         let gameRunning = false;
         let donutInterval;
-        let gameSpeed = 1500; // начальная скорость появления пончиков (мс)
-        let playerSpeed = 10;
+        let gameSpeed = 2000; // Увеличил начальную скорость появления пончиков (было 1500)
+        let playerSpeed = 8;
         let playerPosition = 360;
+        let keysPressed = {};
+        let moveInterval;
         
         // Элементы DOM
         const gameContainer = document.getElementById('gameContainer');
@@ -176,7 +178,24 @@
         // Обработчики событий
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
-        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                keysPressed[e.key] = true;
+                if (!moveInterval) {
+                    movePlayer();
+                    moveInterval = setInterval(movePlayer, 20);
+                }
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                keysPressed[e.key] = false;
+                if (!keysPressed['ArrowLeft'] && !keysPressed['ArrowRight']) {
+                    clearInterval(moveInterval);
+                    moveInterval = null;
+                }
+            }
+        });
         
         // Функция старта игры
         function startGame() {
@@ -209,12 +228,17 @@
         function resetGame() {
             score = 0;
             lives = 3;
-            gameSpeed = 1500;
-            playerSpeed = 10;
+            gameSpeed = 2000; // Увеличил начальную скорость
+            playerSpeed = 8;
             playerPosition = 360;
             player.style.left = playerPosition + 'px';
             updateScore();
             updateLives();
+            keysPressed = {};
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
         }
         
         // Создание пончика
@@ -231,7 +255,7 @@
             
             gameContainer.appendChild(donut);
             
-            // Анимация падения пончика
+            // Анимация падения пончика (уменьшил скорость падения)
             let fallInterval = setInterval(() => {
                 if (!gameRunning) {
                     clearInterval(fallInterval);
@@ -239,7 +263,7 @@
                 }
                 
                 const currentTop = parseInt(donut.style.top);
-                const newTop = currentTop + 5;
+                const newTop = currentTop + 3; // Уменьшил скорость падения (было 5)
                 donut.style.top = newTop + 'px';
                 
                 // Проверка столкновения с игроком
@@ -250,7 +274,7 @@
                     updateScore();
                     
                     // Увеличиваем сложность
-                    if (score % 50 === 0 && gameSpeed > 500) {
+                    if (score % 50 === 0 && gameSpeed > 600) {
                         gameSpeed -= 100;
                         clearInterval(donutInterval);
                         donutInterval = setInterval(createDonut, gameSpeed);
@@ -314,16 +338,14 @@
         }
         
         // Управление игроком
-        function movePlayer(e) {
+        function movePlayer() {
             if (!gameRunning) return;
             
-            switch(e.key) {
-                case 'ArrowLeft':
-                    playerPosition = Math.max(0, playerPosition - playerSpeed);
-                    break;
-                case 'ArrowRight':
-                    playerPosition = Math.min(gameWidth - 80, playerPosition + playerSpeed);
-                    break;
+            if (keysPressed['ArrowLeft']) {
+                playerPosition = Math.max(0, playerPosition - playerSpeed);
+            }
+            if (keysPressed['ArrowRight']) {
+                playerPosition = Math.min(gameWidth - 80, playerPosition + playerSpeed);
             }
             
             player.style.left = playerPosition + 'px';

@@ -1,171 +1,280 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Поедание пончиков</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пончиковый обжора</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            touch-action: none;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            text-align: center;
         }
-        #gameArea {
-            width: 100vw;
-            height: 80vh;
+        
+        #game-container {
             position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            border: 3px solid #333;
+            background-color: #e6f7ff;
             overflow: hidden;
-            background: url('bg.jpg') center/cover;
         }
+        
         #player {
             position: absolute;
-            bottom: 10px;
             width: 80px;
-            height: 80px;
-            transition: 0.1s;
+            height: 100px;
+            bottom: 20px;
+            left: 360px;
+            z-index: 10;
         }
+        
         .donut {
             position: absolute;
             width: 50px;
             height: 50px;
+            z-index: 5;
         }
-        .controls {
-            padding: 10px;
-            background: #333;
-            color: white;
-            display: flex;
-            justify-content: space-around;
+        
+        #controls {
+            margin: 20px;
         }
+        
         button {
             padding: 10px 20px;
-            font-size: 1.2em;
+            font-size: 18px;
+            margin: 0 10px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        #score-display {
+            font-size: 24px;
+            margin: 10px;
+        }
+        
+        #lives-display {
+            font-size: 24px;
+            margin: 10px;
+            color: #e74c3c;
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #e74c3c;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+        }
+        
+        #record-display {
+            font-size: 20px;
+            margin: 10px;
+            color: #2c3e50;
         }
     </style>
 </head>
 <body>
-    <div class="controls">
-        <button onclick="startGame()">Начало игры</button>
-        <button onclick="showRecord()">Рекорд</button>
-        <span>Счёт: <span id="score">0</span></span>
+    <h1>Пончиковый обжора</h1>
+    
+    <div id="controls">
+        <button id="start-btn">Начать игру</button>
+        <button id="record-btn">Рекорд</button>
     </div>
-    <div id="gameArea">
-        <img id="player" src="human.png" style="display: none;">
+    
+    <div id="score-display">Очки: 0</div>
+    <div id="lives-display">Жизни: ❤️❤️❤️</div>
+    <div id="record-display">Рекорд: 0</div>
+    
+    <div id="game-container">
+        <img id="player" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZmY5YzM0IiBkPSJNMjU2IDQ0OGMtMTA2IDAtMTkyLTg2LTE5Mi0xOTJTMTUwIDY0IDI1NiA2NHMxOTIgODYgMTkyIDE5Mi04NiAxOTItMTkyIDE5MnpNMTI4IDI1NmMwIDcwLjcgNTcuMyAxMjggMTI4IDEyOHMxMjgtNTcuMyAxMjgtMTI4LTU3LjMtMTI4LTEyOC0xMjgtMTI4IDU3LjMtMTI4IDEyOHoiLz48cGF0aCBmaWxsPSIjN2Q1YTI1IiBkPSJNMjU2IDExMmMtNzkuNSAwLTE0NCA2NC41LTE0NCAxNDRzNjQuNSAxNDQgMTQ0IDE0NCAxNDQtNjQuNSAxNDQtMTQ0LTY0LjUtMTQ0LTE0NC0xNDR6bTAgMjQwYy01MyAwLTk2LTQzLTk2LTk2czQzLTk2IDk2LTk2IDk2IDQzIDk2IDk2LTQzIDk2LTk2IDk2eiIvPjxwYXRoIGZpbGw9IiM0YjJlMTkiIGQ9Ik0yNTYgMTYwYy01MyAwLTk2IDQzLTk2IDk2czQzIDk2IDk2IDk2IDk2LTQzIDk2LTk2LTQzLTk2LTk2LTk2em0wIDE2MGMtMzUuMyAwLTY0LTI4LjctNjQtNjRzMjguNy02NCA2NC02NCA2NCAyOC43IDY0IDY0LTI4LjcgNjQtNjQgNjR6Ii8+PHBhdGggZmlsbD0iI2ZmY2UwYiIgZD0iTTI1NiAyMDhjLTI2LjUgMC00OCAyMS41LTQ4IDQ4czIxLjUgNDggNDggNDggNDgtMjEuNSA0OC00OC0yMS41LTQ4LTQ4LTQ4em0wIDY0Yy04LjggMC0xNi03LjItMTYtMTZzNy4yLTE2IDE2LTE2IDE2IDcuMiAxNiAxNi03LjIgMTYtMTYgMTZ6Ii8+PC9zdmc+" alt="Игрок">
+        <div id="game-over">Игра окончена!</div>
     </div>
-
+    
+    <audio id="eat-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+    
     <script>
-        let player;
-        let score = 0;
-        let gameActive = false;
-        let record = localStorage.getItem('donutRecord') || 0;
-        let donuts = [];
-        let touchX = 0;
+        // Элементы игры
+        const gameContainer = document.getElementById('game-container');
+        const player = document.getElementById('player');
+        const startBtn = document.getElementById('start-btn');
+        const recordBtn = document.getElementById('record-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const livesDisplay = document.getElementById('lives-display');
+        const recordDisplay = document.getElementById('record-display');
+        const gameOverDisplay = document.getElementById('game-over');
+        const eatSound = document.getElementById('eat-sound');
         
+        // Переменные игры
+        let score = 0;
+        let lives = 3;
+        let record = localStorage.getItem('donutRecord') || 0;
+        let gameActive = false;
+        let donuts = [];
+        let playerX = 360;
+        let gameSpeed = 2;
+        let donutInterval;
+        let gameLoop;
+        
+        // Обновляем отображение рекорда
+        recordDisplay.textContent = `Рекорд: ${record}`;
+        
+        // Обработчики кнопок
+        startBtn.addEventListener('click', startGame);
+        recordBtn.addEventListener('click', showRecord);
+        
+        // Обработчики клавиатуры
+        document.addEventListener('keydown', movePlayer);
+        
+        // Функция начала игры
         function startGame() {
-            if(gameActive) return;
+            if (gameActive) return;
             
-            score = 0;
+            // Сброс параметров игры
             gameActive = true;
-            document.getElementById('score').textContent = '0';
-            player = document.getElementById('player');
-            player.style.display = 'block';
-            player.style.left = 'calc(50% - 40px)';
+            score = 0;
+            lives = 3;
+            playerX = 360;
+            player.style.left = `${playerX}px`;
+            scoreDisplay.textContent = `Очки: ${score}`;
+            livesDisplay.textContent = `Жизни: ${'❤️'.repeat(lives)}`;
+            gameOverDisplay.style.display = 'none';
             
-            donuts.forEach(d => d.remove());
+            // Очистка пончиков
+            donuts.forEach(donut => donut.element.remove());
             donuts = [];
             
-            document.addEventListener('keydown', movePlayer);
-            document.addEventListener('touchstart', handleTouch);
-            document.addEventListener('touchmove', handleTouch);
-            gameInterval = setInterval(createDonut, 1500);
-            gameLoop();
+            // Запуск генерации пончиков
+            donutInterval = setInterval(createDonut, 1000);
+            
+            // Запуск игрового цикла
+            gameLoop = setInterval(updateGame, 20);
         }
-
-        function handleTouch(e) {
-            e.preventDefault();
-            const rect = gameArea.getBoundingClientRect();
-            touchX = e.touches[0].clientX - rect.left;
-            movePlayer({key: ''});
+        
+        // Функция показа рекорда
+        function showRecord() {
+            alert(`Ваш текущий рекорд: ${record}`);
         }
-
+        
+        // Функция движения игрока
+        function movePlayer(e) {
+            if (!gameActive) return;
+            
+            const step = 20;
+            
+            if (e.key === 'ArrowLeft' && playerX > 0) {
+                playerX -= step;
+            } else if (e.key === 'ArrowRight' && playerX < gameContainer.offsetWidth - player.offsetWidth) {
+                playerX += step;
+            }
+            
+            player.style.left = `${playerX}px`;
+        }
+        
+        // Функция создания пончика
         function createDonut() {
-            if(!gameActive) return;
+            if (!gameActive) return;
             
             const donut = document.createElement('img');
-            donut.src = 'donut.png';
             donut.className = 'donut';
-            donut.style.left = Math.random() * (window.innerWidth - 50) + 'px';
-            donut.style.top = '0px';
-            gameArea.appendChild(donut);
-            donuts.push(donut);
-        }
-
-        function gameLoop() {
-            if(!gameActive) return;
+            donut.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZjkzOGM3IiBkPSJNNDQ4IDI1NmMwLTEwNi0xMzYtMTkyLTE5Mi0xOTJzLTE5MiA4Ni0xOTIgMTkyIDEzNiAxOTIgMTkyIDE5MiAxOTItODYgMTkyLTE5MnoiLz48cGF0aCBmaWxsPSIjZmY5YzM0IiBkPSJNMjU2IDExMmM3OS41IDAgMTQ0IDY0LjUgMTQ0IDE0NHMtNjQuNSAxNDQtMTQ0IDE0NC0xNDQtNjQuNS0xNDQtMTQ0IDY0LjUtMTQ0IDE0NC0xNDR6Ii8+PHBhdGggZmlsbD0iI2Y3M2M2ZCIgZD0iTTI1NiAyMDhjMjYuNSAwIDQ4IDIxLjUgNDggNDhzLTIxLjUgNDgtNDggNDgtNDgtMjEuNS00OC00OCAyMS41LTQ4IDQ4LTQ4eiIvPjwvc3ZnPg==";
             
-            donuts.forEach((donut, index) => {
-                const top = parseInt(donut.style.top) || 0;
-                donut.style.top = top + 5 + 'px';
-                
-                if(checkCollision(player, donut)) {
-                    donut.remove();
-                    donuts.splice(index, 1);
-                    score++;
-                    document.getElementById('score').textContent = score;
-                }
-                
-                if(top > gameArea.offsetHeight) {
-                    gameOver();
-                }
+            const x = Math.random() * (gameContainer.offsetWidth - 50);
+            const y = -50;
+            
+            donut.style.left = `${x}px`;
+            donut.style.top = `${y}px`;
+            
+            gameContainer.appendChild(donut);
+            
+            donuts.push({
+                element: donut,
+                x: x,
+                y: y,
+                speed: 2 + Math.random() * gameSpeed
             });
-            
-            requestAnimationFrame(gameLoop);
         }
-
-        function checkCollision(a, b) {
-            const aRect = a.getBoundingClientRect();
-            const bRect = b.getBoundingClientRect();
+        
+        // Функция обновления игры
+        function updateGame() {
+            if (!gameActive) return;
             
-            return !(bRect.right < aRect.left || 
-                   bRect.left > aRect.right || 
-                   bRect.bottom < aRect.top || 
-                   bRect.top > aRect.bottom);
-        }
-
-        function movePlayer(e) {
-            if(!gameActive) return;
-            
-            const playerWidth = 80;
-            let newX;
-            
-            if(e.key === 'ArrowLeft') {
-                newX = parseInt(player.style.left) - 20;
-            } else if(e.key === 'ArrowRight') {
-                newX = parseInt(player.style.left) + 20;
-            } else {
-                newX = touchX - playerWidth/2;
+            // Двигаем пончики
+            for (let i = donuts.length - 1; i >= 0; i--) {
+                const donut = donuts[i];
+                donut.y += donut.speed;
+                donut.element.style.top = `${donut.y}px`;
+                
+                // Проверка столкновения с игроком
+                if (
+                    donut.y + 50 > gameContainer.offsetHeight - 120 &&
+                    donut.y < gameContainer.offsetHeight - 20 &&
+                    donut.x + 50 > playerX &&
+                    donut.x < playerX + 80
+                ) {
+                    // Пойман пончик
+                    eatSound.currentTime = 0;
+                    eatSound.play();
+                    donut.element.remove();
+                    donuts.splice(i, 1);
+                    score += 10;
+                    scoreDisplay.textContent = `Очки: ${score}`;
+                    
+                    // Увеличиваем сложность
+                    if (score % 50 === 0) {
+                        gameSpeed += 0.5;
+                    }
+                    
+                    continue;
+                }
+                
+                // Пончик упал за пределы экрана
+                if (donut.y > gameContainer.offsetHeight) {
+                    donut.element.remove();
+                    donuts.splice(i, 1);
+                    lives--;
+                    livesDisplay.textContent = `Жизни: ${'❤️'.repeat(lives)}`;
+                    
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                }
             }
-            
-            newX = Math.max(0, Math.min(newX, gameArea.offsetWidth - playerWidth));
-            player.style.left = newX + 'px';
         }
-
-        function gameOver() {
+        
+        // Функция завершения игры
+        function endGame() {
             gameActive = false;
-            clearInterval(gameInterval);
-            player.style.display = 'none';
-            donuts.forEach(d => d.remove());
-            donuts = [];
+            clearInterval(donutInterval);
+            clearInterval(gameLoop);
+            gameOverDisplay.style.display = 'block';
             
-            if(score > record) {
+            // Обновление рекорда
+            if (score > record) {
                 record = score;
                 localStorage.setItem('donutRecord', record);
+                recordDisplay.textContent = `Рекорд: ${record}`;
             }
-            
-            alert(`Игра окончена! Счёт: ${score}\nРекорд: ${record}`);
         }
-
-        function showRecord() {
-            alert(`Текущий рекорд: ${record}`);
-        }
+        
+        // Простой звук поедания (короткий бип)
+        eatSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...';
     </script>
 </body>
 </html>

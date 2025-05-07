@@ -10,10 +10,8 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
             background-color: #f0f8ff;
-            text-align: center;
         }
-        
-        #game-container {
+        #gameContainer {
             position: relative;
             width: 800px;
             height: 600px;
@@ -22,228 +20,313 @@
             background-color: #e6f7ff;
             overflow: hidden;
         }
-        
         #player {
             position: absolute;
             width: 80px;
-            height: 100px;
+            height: 120px;
             bottom: 20px;
             left: 360px;
+            background-image: url('human.png');
+            background-size: contain;
+            background-repeat: no-repeat;
             z-index: 10;
         }
-        
         .donut {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
+            background-image: url('donut.png');
+            background-size: contain;
+            background-repeat: no-repeat;
             z-index: 5;
         }
-        
-        #controls {
-            margin: 20px;
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
         }
-        
-        button {
-            padding: 10px 20px;
-            font-size: 18px;
-            margin: 0 10px;
-            cursor: pointer;
+        #startButton {
+            padding: 15px 30px;
+            font-size: 24px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
         }
-        
-        button:hover {
+        #startButton:hover {
             background-color: #45a049;
         }
-        
-        #score-display {
-            font-size: 24px;
-            margin: 10px;
-        }
-        
-        #lives-display {
-            font-size: 24px;
-            margin: 10px;
-            color: #e74c3c;
-        }
-        
-        #game-over {
+        #scoreBoard {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            color: #e74c3c;
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: #333;
+            z-index: 15;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        #lives {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: #333;
+            z-index: 15;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .heart {
+            color: red;
+            font-size: 28px;
+        }
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
             display: none;
-            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+        }
+        #restartButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #restartButton:hover {
+            background-color: #d32f2f;
         }
     </style>
 </head>
 <body>
-    <h1>Пончиковый обжора</h1>
-    
-    <div id="controls">
-        <button id="start-btn">Начать игру</button>
-    </div>
-    
-    <div id="score-display">Очки: 0</div>
-    <div id="lives-display">Жизни: ❤️❤️❤️</div>
-    
-    <div id="game-container">
-        <img id="player" src="human.png" alt="Игрок">
-        <div id="game-over">Игра окончена!</div>
-    </div>
-    
-    <audio id="eat-sound" src="eat.mp3" preload="auto"></audio>
-    
-    <script>
-        // Элементы игры
-        const gameContainer = document.getElementById('game-container');
-        const player = document.getElementById('player');
-        const startBtn = document.getElementById('start-btn');
-        const scoreDisplay = document.getElementById('score-display');
-        const livesDisplay = document.getElementById('lives-display');
-        const gameOverDisplay = document.getElementById('game-over');
-        const eatSound = document.getElementById('eat-sound');
+    <div id="gameContainer">
+        <div id="player"></div>
+        <div id="scoreBoard">Очки: 0</div>
+        <div id="lives">
+            Жизни: 
+            <span class="heart">♥</span>
+            <span class="heart">♥</span>
+            <span class="heart">♥</span>
+        </div>
         
-        // Переменные игры
+        <div id="startScreen">
+            <h1>Пончиковый обжора</h1>
+            <p>Лови падающие пончики!</p>
+            <p>Управление: стрелки влево/вправо</p>
+            <button id="startButton">Начать игру</button>
+        </div>
+        
+        <div id="gameOver">
+            <h1>Игра окончена!</h1>
+            <p id="finalScore">Ваш счет: 0</p>
+            <button id="restartButton">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        // Игровые переменные
         let score = 0;
         let lives = 3;
-        let gameActive = false;
-        let donuts = [];
-        let playerX = 360;
-        let gameSpeed = 2;
+        let gameRunning = false;
         let donutInterval;
-        let gameLoop;
+        let gameSpeed = 1500; // начальная скорость появления пончиков (мс)
+        let playerSpeed = 10;
+        let playerPosition = 360;
         
-        // Обработчики кнопок
-        startBtn.addEventListener('click', startGame);
+        // Элементы DOM
+        const gameContainer = document.getElementById('gameContainer');
+        const player = document.getElementById('player');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const livesDisplay = document.getElementById('lives');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+        const hearts = document.querySelectorAll('.heart');
         
-        // Обработчики клавиатуры
+        // Размеры игрового поля
+        const gameWidth = gameContainer.offsetWidth;
+        const gameHeight = gameContainer.offsetHeight;
+        
+        // Обработчики событий
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
         document.addEventListener('keydown', movePlayer);
         
-        // Функция начала игры
+        // Функция старта игры
         function startGame() {
-            if (gameActive) return;
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            resetGame();
+            gameRunning = true;
             
-            // Сброс параметров игры
-            gameActive = true;
-            score = 0;
-            lives = 3;
-            playerX = 360;
-            player.style.left = `${playerX}px`;
-            scoreDisplay.textContent = `Очки: ${score}`;
-            livesDisplay.textContent = `Жизни: ${'❤️'.repeat(lives)}`;
-            gameOverDisplay.style.display = 'none';
-            
-            // Очистка пончиков
-            donuts.forEach(donut => donut.element.remove());
-            donuts = [];
+            // Очистка всех пончиков
+            document.querySelectorAll('.donut').forEach(donut => donut.remove());
             
             // Запуск генерации пончиков
-            donutInterval = setInterval(createDonut, 1000);
-            
-            // Запуск игрового цикла
-            gameLoop = setInterval(updateGame, 20);
+            donutInterval = setInterval(createDonut, gameSpeed);
         }
         
-        // Функция движения игрока
-        function movePlayer(e) {
-            if (!gameActive) return;
+        // Функция рестарта игры
+        function restartGame() {
+            gameOverScreen.style.display = 'none';
+            resetGame();
+            gameRunning = true;
             
-            const step = 20;
+            // Очистка всех пончиков
+            document.querySelectorAll('.donut').forEach(donut => donut.remove());
             
-            if (e.key === 'ArrowLeft' && playerX > 0) {
-                playerX -= step;
-            } else if (e.key === 'ArrowRight' && playerX < gameContainer.offsetWidth - player.offsetWidth) {
-                playerX += step;
-            }
-            
-            player.style.left = `${playerX}px`;
+            // Запуск генерации пончиков
+            donutInterval = setInterval(createDonut, gameSpeed);
         }
         
-        // Функция создания пончика
+        // Сброс игровых параметров
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            gameSpeed = 1500;
+            playerSpeed = 10;
+            playerPosition = 360;
+            player.style.left = playerPosition + 'px';
+            updateScore();
+            updateLives();
+        }
+        
+        // Создание пончика
         function createDonut() {
-            if (!gameActive) return;
+            if (!gameRunning) return;
             
-            const donut = document.createElement('img');
+            const donut = document.createElement('div');
             donut.className = 'donut';
-            donut.src = "donut.png";
             
-            const x = Math.random() * (gameContainer.offsetWidth - 50);
-            const y = -50;
-            
-            donut.style.left = `${x}px`;
-            donut.style.top = `${y}px`;
+            // Случайная позиция по X
+            const xPos = Math.floor(Math.random() * (gameWidth - 40));
+            donut.style.left = xPos + 'px';
+            donut.style.top = '0px';
             
             gameContainer.appendChild(donut);
             
-            donuts.push({
-                element: donut,
-                x: x,
-                y: y,
-                speed: 2 + Math.random() * gameSpeed
-            });
-        }
-        
-        // Функция обновления игры
-        function updateGame() {
-            if (!gameActive) return;
-            
-            // Двигаем пончики
-            for (let i = donuts.length - 1; i >= 0; i--) {
-                const donut = donuts[i];
-                donut.y += donut.speed;
-                donut.element.style.top = `${donut.y}px`;
+            // Анимация падения пончика
+            let fallInterval = setInterval(() => {
+                if (!gameRunning) {
+                    clearInterval(fallInterval);
+                    return;
+                }
+                
+                const currentTop = parseInt(donut.style.top);
+                const newTop = currentTop + 5;
+                donut.style.top = newTop + 'px';
                 
                 // Проверка столкновения с игроком
-                if (
-                    donut.y + 50 > gameContainer.offsetHeight - 120 &&
-                    donut.y < gameContainer.offsetHeight - 20 &&
-                    donut.x + 50 > playerX &&
-                    donut.x < playerX + 80
-                ) {
-                    // Пойман пончик
-                    eatSound.currentTime = 0;
-                    eatSound.play();
-                    donut.element.remove();
-                    donuts.splice(i, 1);
+                if (checkCollision(donut, player)) {
+                    clearInterval(fallInterval);
+                    donut.remove();
                     score += 10;
-                    scoreDisplay.textContent = `Очки: ${score}`;
+                    updateScore();
                     
                     // Увеличиваем сложность
-                    if (score % 50 === 0) {
-                        gameSpeed += 0.5;
+                    if (score % 50 === 0 && gameSpeed > 500) {
+                        gameSpeed -= 100;
+                        clearInterval(donutInterval);
+                        donutInterval = setInterval(createDonut, gameSpeed);
                     }
-                    
-                    continue;
                 }
                 
                 // Пончик упал за пределы экрана
-                if (donut.y > gameContainer.offsetHeight) {
-                    donut.element.remove();
-                    donuts.splice(i, 1);
-                    lives--;
-                    livesDisplay.textContent = `Жизни: ${'❤️'.repeat(lives)}`;
-                    
-                    if (lives <= 0) {
-                        endGame();
-                    }
+                if (newTop > gameHeight) {
+                    clearInterval(fallInterval);
+                    donut.remove();
+                    loseLife();
                 }
+            }, 30);
+        }
+        
+        // Проверка столкновения
+        function checkCollision(donut, player) {
+            const donutRect = donut.getBoundingClientRect();
+            const playerRect = player.getBoundingClientRect();
+            
+            return !(
+                donutRect.bottom < playerRect.top ||
+                donutRect.top > playerRect.bottom ||
+                donutRect.right < playerRect.left ||
+                donutRect.left > playerRect.right
+            );
+        }
+        
+        // Потеря жизни
+        function loseLife() {
+            lives--;
+            updateLives();
+            
+            if (lives <= 0) {
+                endGame();
             }
         }
         
-        // Функция завершения игры
+        // Обновление счета
+        function updateScore() {
+            scoreBoard.textContent = `Очки: ${score}`;
+        }
+        
+        // Обновление жизней
+        function updateLives() {
+            hearts.forEach((heart, index) => {
+                if (index < lives) {
+                    heart.style.visibility = 'visible';
+                } else {
+                    heart.style.visibility = 'hidden';
+                }
+            });
+        }
+        
+        // Конец игры
         function endGame() {
-            gameActive = false;
+            gameRunning = false;
             clearInterval(donutInterval);
-            clearInterval(gameLoop);
-            gameOverDisplay.style.display = 'block';
+            finalScoreDisplay.textContent = `Ваш счет: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // Управление игроком
+        function movePlayer(e) {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    playerPosition = Math.max(0, playerPosition - playerSpeed);
+                    break;
+                case 'ArrowRight':
+                    playerPosition = Math.min(gameWidth - 80, playerPosition + playerSpeed);
+                    break;
+            }
+            
+            player.style.left = playerPosition + 'px';
         }
     </script>
 </body>

@@ -82,12 +82,6 @@
             display: none;
             z-index: 100;
         }
-        
-        #record-display {
-            font-size: 20px;
-            margin: 10px;
-            color: #2c3e50;
-        }
     </style>
 </head>
 <body>
@@ -95,36 +89,31 @@
     
     <div id="controls">
         <button id="start-btn">Начать игру</button>
-        <button id="record-btn">Рекорд</button>
     </div>
     
     <div id="score-display">Очки: 0</div>
     <div id="lives-display">Жизни: ❤️❤️❤️</div>
-    <div id="record-display">Рекорд: 0</div>
     
     <div id="game-container">
-        <img id="player" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZmY5YzM0IiBkPSJNMjU2IDQ0OGMtMTA2IDAtMTkyLTg2LTE5Mi0xOTJTMTUwIDY0IDI1NiA2NHMxOTIgODYgMTkyIDE5Mi04NiAxOTItMTkyIDE5MnpNMTI4IDI1NmMwIDcwLjcgNTcuMyAxMjggMTI4IDEyOHMxMjgtNTcuMyAxMjgtMTI4LTU3LjMtMTI4LTEyOC0xMjgtMTI4IDU3LjMtMTI4IDEyOHoiLz48cGF0aCBmaWxsPSIjN2Q1YTI1IiBkPSJNMjU2IDExMmMtNzkuNSAwLTE0NCA2NC41LTE0NCAxNDRzNjQuNSAxNDQgMTQ0IDE0NCAxNDQtNjQuNSAxNDQtMTQ0LTY0LjUtMTQ0LTE0NC0xNDR6bTAgMjQwYy01MyAwLTk2LTQzLTk2LTk2czQzLTk2IDk2LTk2IDk2IDQzIDk2IDk2LTQzIDk2LTk2IDk2eiIvPjxwYXRoIGZpbGw9IiM0YjJlMTkiIGQ9Ik0yNTYgMTYwYy01MyAwLTk2IDQzLTk2IDk2czQzIDk2IDk2IDk2IDk2LTQzIDk2LTk2LTQzLTk2LTk2LTk2em0wIDE2MGMtMzUuMyAwLTY0LTI4LjctNjQtNjRzMjguNy02NCA2NC02NCA2NCAyOC43IDY0IDY0LTI4LjcgNjQtNjQgNjR6Ii8+PHBhdGggZmlsbD0iI2ZmY2UwYiIgZD0iTTI1NiAyMDhjLTI2LjUgMC00OCAyMS41LTQ4IDQ4czIxLjUgNDggNDggNDggNDgtMjEuNSA0OC00OC0yMS41LTQ4LTQ4LTQ4em0wIDY0Yy04LjggMC0xNi03LjItMTYtMTZzNy4yLTE2IDE2LTE2IDE2IDcuMiAxNiAxNi03LjIgMTYtMTYgMTZ6Ii8+PC9zdmc+" alt="Игрок">
+        <img id="player" src="human.png" alt="Игрок">
         <div id="game-over">Игра окончена!</div>
     </div>
     
-    <audio id="eat-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."></audio>
+    <audio id="eat-sound" src="eat.mp3" preload="auto"></audio>
     
     <script>
         // Элементы игры
         const gameContainer = document.getElementById('game-container');
         const player = document.getElementById('player');
         const startBtn = document.getElementById('start-btn');
-        const recordBtn = document.getElementById('record-btn');
         const scoreDisplay = document.getElementById('score-display');
         const livesDisplay = document.getElementById('lives-display');
-        const recordDisplay = document.getElementById('record-display');
         const gameOverDisplay = document.getElementById('game-over');
         const eatSound = document.getElementById('eat-sound');
         
         // Переменные игры
         let score = 0;
         let lives = 3;
-        let record = localStorage.getItem('donutRecord') || 0;
         let gameActive = false;
         let donuts = [];
         let playerX = 360;
@@ -132,12 +121,8 @@
         let donutInterval;
         let gameLoop;
         
-        // Обновляем отображение рекорда
-        recordDisplay.textContent = `Рекорд: ${record}`;
-        
         // Обработчики кнопок
         startBtn.addEventListener('click', startGame);
-        recordBtn.addEventListener('click', showRecord);
         
         // Обработчики клавиатуры
         document.addEventListener('keydown', movePlayer);
@@ -167,11 +152,6 @@
             gameLoop = setInterval(updateGame, 20);
         }
         
-        // Функция показа рекорда
-        function showRecord() {
-            alert(`Ваш текущий рекорд: ${record}`);
-        }
-        
         // Функция движения игрока
         function movePlayer(e) {
             if (!gameActive) return;
@@ -193,7 +173,7 @@
             
             const donut = document.createElement('img');
             donut.className = 'donut';
-            donut.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZjkzOGM3IiBkPSJNNDQ4IDI1NmMwLTEwNi0xMzYtMTkyLTE5Mi0xOTJzLTE5MiA4Ni0xOTIgMTkyIDEzNiAxOTIgMTkyIDE5MiAxOTItODYgMTkyLTE5MnoiLz48cGF0aCBmaWxsPSIjZmY5YzM0IiBkPSJNMjU2IDExMmM3OS41IDAgMTQ0IDY0LjUgMTQ0IDE0NHMtNjQuNSAxNDQtMTQ0IDE0NC0xNDQtNjQuNS0xNDQtMTQ0IDY0LjUtMTQ0IDE0NC0xNDR6Ii8+PHBhdGggZmlsbD0iI2Y3M2M2ZCIgZD0iTTI1NiAyMDhjMjYuNSAwIDQ4IDIxLjUgNDggNDhzLTIxLjUgNDgtNDggNDgtNDgtMjEuNS00OC00OCAyMS41LTQ4IDQ4LTQ4eiIvPjwvc3ZnPg==";
+            donut.src = "donut.png";
             
             const x = Math.random() * (gameContainer.offsetWidth - 50);
             const y = -50;
@@ -264,17 +244,7 @@
             clearInterval(donutInterval);
             clearInterval(gameLoop);
             gameOverDisplay.style.display = 'block';
-            
-            // Обновление рекорда
-            if (score > record) {
-                record = score;
-                localStorage.setItem('donutRecord', record);
-                recordDisplay.textContent = `Рекорд: ${record}`;
-            }
         }
-        
-        // Простой звук поедания (короткий бип)
-        eatSound.src = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...';
     </script>
 </body>
 </html>

@@ -238,6 +238,8 @@
             font-size: 30px;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 35;
         }
         .control-btn:active {
             background-color: rgba(0, 0, 0, 0.7);
@@ -253,6 +255,20 @@
             border-radius: 5px;
             z-index: 40;
             display: none;
+        }
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            color: white;
+            font-size: 24px;
         }
         @media (max-width: 768px) {
             #mobileControlsToggle {
@@ -274,9 +290,12 @@
                 height: 40px;
             }
             .control-btn {
-                width: 60px;
-                height: 60px;
+                width: 70px;
+                height: 70px;
                 font-size: 24px;
+            }
+            #controls {
+                padding: 0 10px;
             }
         }
     </style>
@@ -332,6 +351,10 @@
             </table>
             <button id="backButton">Назад</button>
         </div>
+        
+        <div id="loading">
+            Загрузка...
+        </div>
     </div>
 
     <script>
@@ -341,12 +364,15 @@
         let gameRunning = false;
         let donutInterval;
         let specialDonutInterval;
-        let gameSpeed = 2000;
-        let playerSpeed = 8;
+        let gameSpeed = 1500; // Возвращаем исходную скорость
+        let playerSpeed = 10; // Возвращаем исходную скорость игрока
         let playerPosition = 50;
         let keysPressed = {};
         let moveInterval;
         let isMobile = false;
+        
+        // URL для работы с общим рейтингом (замените на ваш реальный API)
+        const API_URL = 'https://your-server.com/api'; // Замените на реальный URL
         
         // Элементы DOM
         const gameContainer = document.getElementById('gameContainer');
@@ -369,13 +395,14 @@
         const rightBtn = document.getElementById('rightBtn');
         const mobileControlsToggle = document.getElementById('mobileControlsToggle');
         const controls = document.getElementById('controls');
+        const loadingScreen = document.getElementById('loading');
         
         // Размеры игрового поля
         const gameWidth = gameContainer.offsetWidth;
         const gameHeight = gameContainer.offsetHeight;
         
-        // Лучшие результаты
-        let highScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
+        // Лучшие результаты (изначально пустые)
+        let highScores = [];
         
         // Проверка мобильного устройства
         function checkMobile() {
@@ -386,16 +413,96 @@
             }
         }
         
+        // Загрузка рейтинга с сервера
+        async function loadLeaderboard() {
+            try {
+                loadingScreen.style.display = 'flex';
+                const response = await fetch(`${API_URL}/scores`);
+                if (response.ok) {
+                    highScores = await response.json();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки рейтинга:', error);
+                // Если не удалось загрузить, используем локальные данные
+                const localScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
+                highScores = localScores;
+            } finally {
+                loadingScreen.style.display = 'none';
+            }
+        }
+        
+        // Сохранение результата на сервер
+        async function saveScoreToServer(name, score) {
+            try {
+                loadingScreen.style.display = 'flex';
+                const response = await fetch(`${API_URL}/scores`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, score }),
+                });
+                
+                if (response.ok) {
+                    await loadLeaderboard();
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения результата:', error);
+                // Сохраняем локально, если сервер недоступен
+                const localScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
+                localScores.push({ name, score, date: new Date().toLocaleDateString() });
+                localScores.sort((a, b) => b.score - a.score);
+                localStorage.setItem('donutHighScores', JSON.stringify(localScores.slice(0, 10)));
+                highScores = localScores;
+            } finally {
+                loadingScreen.style.display = 'none';
+            }
+        }
+        
         // Обработчики событий
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
         leaderboardButton.addEventListener('click', showLeaderboard);
         backButton.addEventListener('click', hideLeaderboard);
         saveScoreButton.addEventListener('click', saveScore);
-        leftBtn.addEventListener('touchstart', () => keysPressed['ArrowLeft'] = true);
-        leftBtn.addEventListener('touchend', () => keysPressed['ArrowLeft'] = false);
-        rightBtn.addEventListener('touchstart', () => keysPressed['ArrowRight'] = true);
-        rightBtn.addEventListener('touchend', () => keysPressed['ArrowRight'] = false);
+        
+        // Мобильное управление
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keysPressed['ArrowLeft'] = true;
+            if (!moveInterval) {
+                movePlayer();
+                moveInterval = setInterval(movePlayer, 20);
+            }
+        });
+        
+        leftBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            keysPressed['ArrowLeft'] = false;
+            if (!keysPressed['ArrowLeft'] && !keysPressed['ArrowRight']) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+        });
+        
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            keysPressed['ArrowRight'] = true;
+            if (!moveInterval) {
+                movePlayer();
+                moveInterval = setInterval(movePlayer, 20);
+            }
+        });
+        
+        rightBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            keysPressed['ArrowRight'] = false;
+            if (!keysPressed['ArrowLeft'] && !keysPressed['ArrowRight']) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+        });
+        
         mobileControlsToggle.addEventListener('click', toggleControls);
         
         // Клавиатурное управление
@@ -460,8 +567,8 @@
         function resetGame() {
             score = 0;
             lives = 3;
-            gameSpeed = 2000;
-            playerSpeed = 8;
+            gameSpeed = 1500;
+            playerSpeed = 10;
             playerPosition = 50;
             player.style.left = '50%';
             updateScore();
@@ -481,8 +588,8 @@
             const donut = document.createElement('div');
             donut.className = 'donut';
             
-            // Случайная позиция по X
-            const xPos = Math.floor(Math.random() * (gameWidth - 40));
+            // Случайная позиция по X (не ближе 20px к краям)
+            const xPos = 20 + Math.floor(Math.random() * (gameWidth - 80));
             donut.style.left = xPos + 'px';
             donut.style.top = '0px';
             
@@ -530,8 +637,8 @@
             const donut = document.createElement('div');
             donut.className = 'donut special';
             
-            // Случайная позиция по X
-            const xPos = Math.floor(Math.random() * (gameWidth - 50));
+            // Случайная позиция по X (не ближе 20px к краям)
+            const xPos = 20 + Math.floor(Math.random() * (gameWidth - 90));
             donut.style.left = xPos + 'px';
             donut.style.top = '0px';
             
@@ -570,7 +677,7 @@
             const bonus = document.createElement('div');
             bonus.textContent = '+100';
             bonus.style.position = 'absolute';
-            bonus.style.left = playerPosition + 'px';
+            bonus.style.left = (playerPosition - 5) + '%';
             bonus.style.bottom = '150px';
             bonus.style.color = 'gold';
             bonus.style.fontSize = '30px';
@@ -647,44 +754,29 @@
             if (!gameRunning) return;
             
             if (keysPressed['ArrowLeft']) {
-                playerPosition = Math.max(0, playerPosition - playerSpeed);
+                playerPosition = Math.max(2, playerPosition - playerSpeed);
             }
             if (keysPressed['ArrowRight']) {
-                playerPosition = Math.min(100, playerPosition + playerSpeed);
+                playerPosition = Math.min(98, playerPosition + playerSpeed);
             }
             
             player.style.left = `calc(${playerPosition}% - ${player.offsetWidth / 2}px)`;
         }
         
         // Сохранение результата
-        function saveScore() {
+        async function saveScore() {
             const playerName = nameInput.value.trim() || 'Аноним';
             
             if (playerName.length > 0) {
-                highScores.push({
-                    name: playerName,
-                    score: score,
-                    date: new Date().toLocaleDateString()
-                });
-                
-                // Сортировка по убыванию очков
-                highScores.sort((a, b) => b.score - a.score);
-                
-                // Оставляем только топ-10
-                if (highScores.length > 10) {
-                    highScores = highScores.slice(0, 10);
-                }
-                
-                // Сохраняем в localStorage
-                localStorage.setItem('donutHighScores', JSON.stringify(highScores));
-                
-                // Показываем таблицу лидеров
+                await saveScoreToServer(playerName, score);
                 showLeaderboard();
             }
         }
         
         // Показать таблицу лидеров
-        function showLeaderboard() {
+        async function showLeaderboard() {
+            await loadLeaderboard();
+            
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
             leaderboard.style.display = 'flex';
@@ -732,6 +824,9 @@
         // Инициализация игры
         checkMobile();
         player.style.left = `calc(50% - ${player.offsetWidth / 2}px)`;
+        
+        // Загружаем таблицу лидеров при запуске
+        loadLeaderboard();
     </script>
 </body>
 </html>

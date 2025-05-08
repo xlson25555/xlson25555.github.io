@@ -107,6 +107,26 @@
             z-index: 20;
             color: white;
         }
+        #nameInput {
+            padding: 10px;
+            font-size: 18px;
+            margin: 10px 0;
+            width: 200px;
+            text-align: center;
+        }
+        #saveScoreButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #saveScoreButton:hover {
+            background-color: #45a049;
+        }
         #restartButton {
             padding: 15px 30px;
             font-size: 24px;
@@ -119,6 +139,64 @@
         }
         #restartButton:hover {
             background-color: #d32f2f;
+        }
+        #leaderboard {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 25;
+            color: white;
+        }
+        #leaderboardTable {
+            width: 80%;
+            max-width: 500px;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        #leaderboardTable th, #leaderboardTable td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        #leaderboardTable th {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #leaderboardTable tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        #leaderboardButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #leaderboardButton:hover {
+            background-color: #0b7dda;
+        }
+        #backButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #backButton:hover {
+            background-color: #e68a00;
         }
     </style>
 </head>
@@ -138,12 +216,32 @@
             <p>Лови падающие пончики!</p>
             <p>Управление: стрелки влево/вправо (удерживайте для движения)</p>
             <button id="startButton">Начать игру</button>
+            <button id="leaderboardButton">Таблица лидеров</button>
         </div>
         
         <div id="gameOver">
             <h1>Игра окончена!</h1>
             <p id="finalScore">Ваш счет: 0</p>
+            <input type="text" id="nameInput" placeholder="Введите ваше имя" maxlength="15">
+            <button id="saveScoreButton">Сохранить результат</button>
             <button id="restartButton">Играть снова</button>
+        </div>
+        
+        <div id="leaderboard">
+            <h1>Таблица лидеров</h1>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Имя</th>
+                        <th>Очки</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <!-- Таблица будет заполняться динамически -->
+                </tbody>
+            </table>
+            <button id="backButton">Назад</button>
         </div>
     </div>
 
@@ -153,7 +251,7 @@
         let lives = 3;
         let gameRunning = false;
         let donutInterval;
-        let gameSpeed = 2000; // Увеличил начальную скорость появления пончиков (было 1500)
+        let gameSpeed = 2000;
         let playerSpeed = 8;
         let playerPosition = 360;
         let keysPressed = {};
@@ -170,14 +268,26 @@
         const finalScoreDisplay = document.getElementById('finalScore');
         const restartButton = document.getElementById('restartButton');
         const hearts = document.querySelectorAll('.heart');
+        const nameInput = document.getElementById('nameInput');
+        const saveScoreButton = document.getElementById('saveScoreButton');
+        const leaderboard = document.getElementById('leaderboard');
+        const leaderboardButton = document.getElementById('leaderboardButton');
+        const backButton = document.getElementById('backButton');
+        const leaderboardBody = document.getElementById('leaderboardBody');
         
         // Размеры игрового поля
         const gameWidth = gameContainer.offsetWidth;
         const gameHeight = gameContainer.offsetHeight;
         
+        // Лучшие результаты
+        let highScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
+        
         // Обработчики событий
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
+        leaderboardButton.addEventListener('click', showLeaderboard);
+        backButton.addEventListener('click', hideLeaderboard);
+        saveScoreButton.addEventListener('click', saveScore);
         document.addEventListener('keydown', (e) => {
             if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 keysPressed[e.key] = true;
@@ -201,6 +311,7 @@
         function startGame() {
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
+            leaderboard.style.display = 'none';
             resetGame();
             gameRunning = true;
             
@@ -228,7 +339,7 @@
         function resetGame() {
             score = 0;
             lives = 3;
-            gameSpeed = 2000; // Увеличил начальную скорость
+            gameSpeed = 2000;
             playerSpeed = 8;
             playerPosition = 360;
             player.style.left = playerPosition + 'px';
@@ -255,7 +366,7 @@
             
             gameContainer.appendChild(donut);
             
-            // Анимация падения пончика (уменьшил скорость падения)
+            // Анимация падения пончика
             let fallInterval = setInterval(() => {
                 if (!gameRunning) {
                     clearInterval(fallInterval);
@@ -263,7 +374,7 @@
                 }
                 
                 const currentTop = parseInt(donut.style.top);
-                const newTop = currentTop + 3; // Уменьшил скорость падения (было 5)
+                const newTop = currentTop + 3;
                 donut.style.top = newTop + 'px';
                 
                 // Проверка столкновения с игроком
@@ -335,6 +446,7 @@
             clearInterval(donutInterval);
             finalScoreDisplay.textContent = `Ваш счет: ${score}`;
             gameOverScreen.style.display = 'flex';
+            nameInput.focus();
         }
         
         // Управление игроком
@@ -350,6 +462,79 @@
             
             player.style.left = playerPosition + 'px';
         }
+        
+        // Сохранение результата
+        function saveScore() {
+            const playerName = nameInput.value.trim() || 'Аноним';
+            
+            if (playerName.length > 0) {
+                highScores.push({
+                    name: playerName,
+                    score: score,
+                    date: new Date().toLocaleDateString()
+                });
+                
+                // Сортировка по убыванию очков
+                highScores.sort((a, b) => b.score - a.score);
+                
+                // Оставляем только топ-10
+                if (highScores.length > 10) {
+                    highScores = highScores.slice(0, 10);
+                }
+                
+                // Сохраняем в localStorage
+                localStorage.setItem('donutHighScores', JSON.stringify(highScores));
+                
+                // Показываем таблицу лидеров
+                showLeaderboard();
+            }
+        }
+        
+        // Показать таблицу лидеров
+        function showLeaderboard() {
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            leaderboard.style.display = 'flex';
+            
+            // Очищаем таблицу
+            leaderboardBody.innerHTML = '';
+            
+            // Заполняем таблицу
+            highScores.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                
+                const placeCell = document.createElement('td');
+                placeCell.textContent = index + 1;
+                
+                const nameCell = document.createElement('td');
+                nameCell.textContent = entry.name;
+                
+                const scoreCell = document.createElement('td');
+                scoreCell.textContent = entry.score;
+                
+                row.appendChild(placeCell);
+                row.appendChild(nameCell);
+                row.appendChild(scoreCell);
+                
+                leaderboardBody.appendChild(row);
+            });
+            
+            // Если таблица пуста
+            if (highScores.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 3;
+                cell.textContent = 'Пока нет рекордов!';
+                row.appendChild(cell);
+                leaderboardBody.appendChild(row);
+            }
+        }
+        
+        // Скрыть таблицу лидеров
+        function hideLeaderboard() {
+            leaderboard.style.display = 'none';
+            startScreen.style.display = 'flex';
+        }
     </script>
-</body>
+</head>
 </html>

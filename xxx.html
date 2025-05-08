@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Пончиковый обжора</title>
     <style>
         body {
@@ -10,12 +10,15 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
             background-color: #f0f8ff;
+            touch-action: manipulation;
         }
         #gameContainer {
             position: relative;
-            width: 800px;
-            height: 600px;
-            margin: 20px auto;
+            width: 100%;
+            height: 100vh;
+            max-width: 800px;
+            max-height: 600px;
+            margin: 0 auto;
             border: 3px solid #333;
             background-color: #e6f7ff;
             overflow: hidden;
@@ -25,7 +28,8 @@
             width: 80px;
             height: 120px;
             bottom: 20px;
-            left: 360px;
+            left: 50%;
+            transform: translateX(-50%);
             background-image: url('human.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -39,6 +43,20 @@
             background-size: contain;
             background-repeat: no-repeat;
             z-index: 5;
+        }
+        .donut.special {
+            background-image: url('donut2.png');
+            width: 50px;
+            height: 50px;
+            animation: glow 0.5s infinite alternate;
+        }
+        @keyframes glow {
+            from {
+                filter: drop-shadow(0 0 5px gold);
+            }
+            to {
+                filter: drop-shadow(0 0 15px gold);
+            }
         }
         #startScreen {
             position: absolute;
@@ -198,6 +216,69 @@
         #backButton:hover {
             background-color: #e68a00;
         }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 30;
+        }
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .control-btn:active {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        #mobileControlsToggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            z-index: 40;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            #mobileControlsToggle {
+                display: block;
+            }
+            #controls {
+                display: flex;
+            }
+            #player {
+                width: 60px;
+                height: 90px;
+            }
+            .donut {
+                width: 30px;
+                height: 30px;
+            }
+            .donut.special {
+                width: 40px;
+                height: 40px;
+            }
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -211,10 +292,18 @@
             <span class="heart">♥</span>
         </div>
         
+        <div id="controls">
+            <div class="control-btn" id="leftBtn">←</div>
+            <div class="control-btn" id="rightBtn">→</div>
+        </div>
+        
+        <button id="mobileControlsToggle">Управление</button>
+        
         <div id="startScreen">
             <h1>Пончиковый обжора</h1>
             <p>Лови падающие пончики!</p>
-            <p>Управление: стрелки влево/вправо (удерживайте для движения)</p>
+            <p>Золотые пончики дают 100 очков!</p>
+            <p>Управление: стрелки или кнопки внизу</p>
             <button id="startButton">Начать игру</button>
             <button id="leaderboardButton">Таблица лидеров</button>
         </div>
@@ -251,11 +340,13 @@
         let lives = 3;
         let gameRunning = false;
         let donutInterval;
+        let specialDonutInterval;
         let gameSpeed = 2000;
         let playerSpeed = 8;
-        let playerPosition = 360;
+        let playerPosition = 50;
         let keysPressed = {};
         let moveInterval;
+        let isMobile = false;
         
         // Элементы DOM
         const gameContainer = document.getElementById('gameContainer');
@@ -274,6 +365,10 @@
         const leaderboardButton = document.getElementById('leaderboardButton');
         const backButton = document.getElementById('backButton');
         const leaderboardBody = document.getElementById('leaderboardBody');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const mobileControlsToggle = document.getElementById('mobileControlsToggle');
+        const controls = document.getElementById('controls');
         
         // Размеры игрового поля
         const gameWidth = gameContainer.offsetWidth;
@@ -282,12 +377,28 @@
         // Лучшие результаты
         let highScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
         
+        // Проверка мобильного устройства
+        function checkMobile() {
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                controls.style.display = 'flex';
+                mobileControlsToggle.style.display = 'block';
+            }
+        }
+        
         // Обработчики событий
         startButton.addEventListener('click', startGame);
         restartButton.addEventListener('click', restartGame);
         leaderboardButton.addEventListener('click', showLeaderboard);
         backButton.addEventListener('click', hideLeaderboard);
         saveScoreButton.addEventListener('click', saveScore);
+        leftBtn.addEventListener('touchstart', () => keysPressed['ArrowLeft'] = true);
+        leftBtn.addEventListener('touchend', () => keysPressed['ArrowLeft'] = false);
+        rightBtn.addEventListener('touchstart', () => keysPressed['ArrowRight'] = true);
+        rightBtn.addEventListener('touchend', () => keysPressed['ArrowRight'] = false);
+        mobileControlsToggle.addEventListener('click', toggleControls);
+        
+        // Клавиатурное управление
         document.addEventListener('keydown', (e) => {
             if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 keysPressed[e.key] = true;
@@ -297,6 +408,7 @@
                 }
             }
         });
+        
         document.addEventListener('keyup', (e) => {
             if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 keysPressed[e.key] = false;
@@ -306,6 +418,11 @@
                 }
             }
         });
+        
+        // Переключение видимости кнопок управления
+        function toggleControls() {
+            controls.style.display = controls.style.display === 'none' ? 'flex' : 'none';
+        }
         
         // Функция старта игры
         function startGame() {
@@ -320,6 +437,9 @@
             
             // Запуск генерации пончиков
             donutInterval = setInterval(createDonut, gameSpeed);
+            
+            // Запуск генерации редких пончиков (каждые 10-15 секунд)
+            specialDonutInterval = setInterval(createSpecialDonut, 10000 + Math.random() * 5000);
         }
         
         // Функция рестарта игры
@@ -333,6 +453,7 @@
             
             // Запуск генерации пончиков
             donutInterval = setInterval(createDonut, gameSpeed);
+            specialDonutInterval = setInterval(createSpecialDonut, 10000 + Math.random() * 5000);
         }
         
         // Сброс игровых параметров
@@ -341,8 +462,8 @@
             lives = 3;
             gameSpeed = 2000;
             playerSpeed = 8;
-            playerPosition = 360;
-            player.style.left = playerPosition + 'px';
+            playerPosition = 50;
+            player.style.left = '50%';
             updateScore();
             updateLives();
             keysPressed = {};
@@ -350,9 +471,10 @@
                 clearInterval(moveInterval);
                 moveInterval = null;
             }
+            clearInterval(specialDonutInterval);
         }
         
-        // Создание пончика
+        // Создание обычного пончика
         function createDonut() {
             if (!gameRunning) return;
             
@@ -401,6 +523,76 @@
             }, 30);
         }
         
+        // Создание редкого пончика
+        function createSpecialDonut() {
+            if (!gameRunning) return;
+            
+            const donut = document.createElement('div');
+            donut.className = 'donut special';
+            
+            // Случайная позиция по X
+            const xPos = Math.floor(Math.random() * (gameWidth - 50));
+            donut.style.left = xPos + 'px';
+            donut.style.top = '0px';
+            
+            gameContainer.appendChild(donut);
+            
+            // Анимация падения пончика (падает быстрее)
+            let fallInterval = setInterval(() => {
+                if (!gameRunning) {
+                    clearInterval(fallInterval);
+                    return;
+                }
+                
+                const currentTop = parseInt(donut.style.top);
+                const newTop = currentTop + 6; // Падает в 2 раза быстрее обычного
+                donut.style.top = newTop + 'px';
+                
+                // Проверка столкновения с игроком
+                if (checkCollision(donut, player)) {
+                    clearInterval(fallInterval);
+                    donut.remove();
+                    score += 100; // Дает 100 очков
+                    updateScore();
+                    showBonusMessage();
+                }
+                
+                // Пончик упал за пределы экрана
+                if (newTop > gameHeight) {
+                    clearInterval(fallInterval);
+                    donut.remove();
+                }
+            }, 20); // Более плавное падение
+        }
+        
+        // Показать сообщение о бонусе
+        function showBonusMessage() {
+            const bonus = document.createElement('div');
+            bonus.textContent = '+100';
+            bonus.style.position = 'absolute';
+            bonus.style.left = playerPosition + 'px';
+            bonus.style.bottom = '150px';
+            bonus.style.color = 'gold';
+            bonus.style.fontSize = '30px';
+            bonus.style.fontWeight = 'bold';
+            bonus.style.textShadow = '0 0 5px black';
+            bonus.style.zIndex = '20';
+            bonus.style.animation = 'fadeUp 1s forwards';
+            
+            document.styleSheets[0].insertRule(`
+                @keyframes fadeUp {
+                    0% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-50px); }
+                }
+            `);
+            
+            gameContainer.appendChild(bonus);
+            
+            setTimeout(() => {
+                bonus.remove();
+            }, 1000);
+        }
+        
         // Проверка столкновения
         function checkCollision(donut, player) {
             const donutRect = donut.getBoundingClientRect();
@@ -444,6 +636,7 @@
         function endGame() {
             gameRunning = false;
             clearInterval(donutInterval);
+            clearInterval(specialDonutInterval);
             finalScoreDisplay.textContent = `Ваш счет: ${score}`;
             gameOverScreen.style.display = 'flex';
             nameInput.focus();
@@ -457,10 +650,10 @@
                 playerPosition = Math.max(0, playerPosition - playerSpeed);
             }
             if (keysPressed['ArrowRight']) {
-                playerPosition = Math.min(gameWidth - 80, playerPosition + playerSpeed);
+                playerPosition = Math.min(100, playerPosition + playerSpeed);
             }
             
-            player.style.left = playerPosition + 'px';
+            player.style.left = `calc(${playerPosition}% - ${player.offsetWidth / 2}px)`;
         }
         
         // Сохранение результата
@@ -535,6 +728,10 @@
             leaderboard.style.display = 'none';
             startScreen.style.display = 'flex';
         }
+        
+        // Инициализация игры
+        checkMobile();
+        player.style.left = `calc(50% - ${player.offsetWidth / 2}px)`;
     </script>
-</head>
+</body>
 </html>

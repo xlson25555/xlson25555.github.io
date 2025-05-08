@@ -25,8 +25,8 @@
         }
         #player {
             position: absolute;
-            width: 70px; /* Уменьшил ширину */
-            height: 105px; /* Сохранил пропорции */
+            width: 70px;
+            height: 105px;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
@@ -244,18 +244,6 @@
         .control-btn:active {
             background-color: rgba(0, 0, 0, 0.7);
         }
-        #mobileControlsToggle {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            z-index: 40;
-            display: none;
-        }
         #loading {
             position: absolute;
             top: 0;
@@ -271,9 +259,6 @@
             font-size: 24px;
         }
         @media (max-width: 768px) {
-            #mobileControlsToggle {
-                display: block;
-            }
             #controls {
                 display: flex;
             }
@@ -316,12 +301,10 @@
             <div class="control-btn" id="rightBtn">→</div>
         </div>
         
-        <button id="mobileControlsToggle">Управление</button>
-        
         <div id="startScreen">
             <h1>Пончиковый обжора</h1>
             <p>Лови падающие пончики!</p>
-            <p>Золотые пончики дают 100 очков!</p>
+            <p>Виски даёт 100 очков!</p>
             <p>Управление: стрелки или кнопки внизу</p>
             <button id="startButton">Начать игру</button>
             <button id="leaderboardButton">Таблица лидеров</button>
@@ -365,14 +348,14 @@
         let donutInterval;
         let specialDonutInterval;
         let gameSpeed = 1500;
-        let playerSpeed = 5; // Уменьшил скорость игрока
+        let playerSpeed = 5;
         let playerPosition = 50;
         let keysPressed = {};
         let moveInterval;
         let isMobile = false;
         
-        // URL для работы с общим рейтингом (замените на ваш реальный API)
-        const API_URL = 'https://your-server.com/api'; // Замените на реальный URL
+        // URL для работы с общим рейтингом
+        const API_URL = 'https://your-server.com/api';
         
         // Элементы DOM
         const gameContainer = document.getElementById('gameContainer');
@@ -393,7 +376,6 @@
         const leaderboardBody = document.getElementById('leaderboardBody');
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
-        const mobileControlsToggle = document.getElementById('mobileControlsToggle');
         const controls = document.getElementById('controls');
         const loadingScreen = document.getElementById('loading');
         
@@ -401,7 +383,7 @@
         const gameWidth = gameContainer.offsetWidth;
         const gameHeight = gameContainer.offsetHeight;
         
-        // Лучшие результаты (изначально пустые)
+        // Лучшие результаты
         let highScores = [];
         
         // Проверка мобильного устройства
@@ -409,7 +391,6 @@
             isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             if (isMobile) {
                 controls.style.display = 'flex';
-                mobileControlsToggle.style.display = 'block';
             }
         }
         
@@ -423,7 +404,6 @@
                 }
             } catch (error) {
                 console.error('Ошибка загрузки рейтинга:', error);
-                // Если не удалось загрузить, используем локальные данные
                 const localScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
                 highScores = localScores;
             } finally {
@@ -448,7 +428,6 @@
                 }
             } catch (error) {
                 console.error('Ошибка сохранения результата:', error);
-                // Сохраняем локально, если сервер недоступен
                 const localScores = JSON.parse(localStorage.getItem('donutHighScores')) || [];
                 localScores.push({ name, score, date: new Date().toLocaleDateString() });
                 localScores.sort((a, b) => b.score - a.score);
@@ -503,8 +482,6 @@
             }
         });
         
-        mobileControlsToggle.addEventListener('click', toggleControls);
-        
         // Клавиатурное управление
         document.addEventListener('keydown', (e) => {
             if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -526,11 +503,6 @@
             }
         });
         
-        // Переключение видимости кнопок управления
-        function toggleControls() {
-            controls.style.display = controls.style.display === 'none' ? 'flex' : 'none';
-        }
-        
         // Функция старта игры
         function startGame() {
             startScreen.style.display = 'none';
@@ -539,13 +511,9 @@
             resetGame();
             gameRunning = true;
             
-            // Очистка всех пончиков
             document.querySelectorAll('.donut').forEach(donut => donut.remove());
             
-            // Запуск генерации пончиков
             donutInterval = setInterval(createDonut, gameSpeed);
-            
-            // Запуск генерации редких пончиков (каждые 10-15 секунд)
             specialDonutInterval = setInterval(createSpecialDonut, 10000 + Math.random() * 5000);
         }
         
@@ -555,10 +523,8 @@
             resetGame();
             gameRunning = true;
             
-            // Очистка всех пончиков
             document.querySelectorAll('.donut').forEach(donut => donut.remove());
             
-            // Запуск генерации пончиков
             donutInterval = setInterval(createDonut, gameSpeed);
             specialDonutInterval = setInterval(createSpecialDonut, 10000 + Math.random() * 5000);
         }
@@ -568,7 +534,7 @@
             score = 0;
             lives = 3;
             gameSpeed = 1500;
-            playerSpeed = 1; // Уменьшенная скорость
+            playerSpeed = 1;
             playerPosition = 50;
             player.style.left = '50%';
             updateScore();
@@ -588,14 +554,12 @@
             const donut = document.createElement('div');
             donut.className = 'donut';
             
-            // Случайная позиция по X (не ближе 20px к краям)
             const xPos = 20 + Math.floor(Math.random() * (gameWidth - 80));
             donut.style.left = xPos + 'px';
             donut.style.top = '0px';
             
             gameContainer.appendChild(donut);
             
-            // Анимация падения пончика
             let fallInterval = setInterval(() => {
                 if (!gameRunning) {
                     clearInterval(fallInterval);
@@ -606,14 +570,12 @@
                 const newTop = currentTop + 3;
                 donut.style.top = newTop + 'px';
                 
-                // Проверка столкновения с игроком
                 if (checkCollision(donut, player)) {
                     clearInterval(fallInterval);
                     donut.remove();
                     score += 10;
                     updateScore();
                     
-                    // Увеличиваем сложность
                     if (score % 50 === 0 && gameSpeed > 600) {
                         gameSpeed -= 100;
                         clearInterval(donutInterval);
@@ -621,7 +583,6 @@
                     }
                 }
                 
-                // Пончик упал за пределы экрана
                 if (newTop > gameHeight) {
                     clearInterval(fallInterval);
                     donut.remove();
@@ -637,14 +598,12 @@
             const donut = document.createElement('div');
             donut.className = 'donut special';
             
-            // Случайная позиция по X (не ближе 20px к краям)
             const xPos = 20 + Math.floor(Math.random() * (gameWidth - 90));
             donut.style.left = xPos + 'px';
             donut.style.top = '0px';
             
             gameContainer.appendChild(donut);
             
-            // Анимация падения пончика (падает быстрее)
             let fallInterval = setInterval(() => {
                 if (!gameRunning) {
                     clearInterval(fallInterval);
@@ -652,24 +611,22 @@
                 }
                 
                 const currentTop = parseInt(donut.style.top);
-                const newTop = currentTop + 6; // Падает в 2 раза быстрее обычного
+                const newTop = currentTop + 6;
                 donut.style.top = newTop + 'px';
                 
-                // Проверка столкновения с игроком
                 if (checkCollision(donut, player)) {
                     clearInterval(fallInterval);
                     donut.remove();
-                    score += 100; // Дает 100 очков
+                    score += 100;
                     updateScore();
                     showBonusMessage();
                 }
                 
-                // Пончик упал за пределы экрана
                 if (newTop > gameHeight) {
                     clearInterval(fallInterval);
                     donut.remove();
                 }
-            }, 20); // Более плавное падение
+            }, 20);
         }
         
         // Показать сообщение о бонусе
@@ -754,10 +711,10 @@
             if (!gameRunning) return;
             
             if (keysPressed['ArrowLeft']) {
-                playerPosition = Math.max(3, playerPosition - playerSpeed); // Увеличил минимальную границу
+                playerPosition = Math.max(3, playerPosition - playerSpeed);
             }
             if (keysPressed['ArrowRight']) {
-                playerPosition = Math.min(97, playerPosition + playerSpeed); // Увеличил максимальную границу
+                playerPosition = Math.min(97, playerPosition + playerSpeed);
             }
             
             player.style.left = `calc(${playerPosition}% - ${player.offsetWidth / 2}px)`;
@@ -781,10 +738,8 @@
             gameOverScreen.style.display = 'none';
             leaderboard.style.display = 'flex';
             
-            // Очищаем таблицу
             leaderboardBody.innerHTML = '';
             
-            // Заполняем таблицу
             highScores.forEach((entry, index) => {
                 const row = document.createElement('tr');
                 
@@ -804,7 +759,6 @@
                 leaderboardBody.appendChild(row);
             });
             
-            // Если таблица пуста
             if (highScores.length === 0) {
                 const row = document.createElement('tr');
                 const cell = document.createElement('td');
@@ -824,8 +778,6 @@
         // Инициализация игры
         checkMobile();
         player.style.left = `calc(50% - ${player.offsetWidth / 2}px)`;
-        
-        // Загружаем таблицу лидеров при запуске
         loadLeaderboard();
     </script>
 </body>
